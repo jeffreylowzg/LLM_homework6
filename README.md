@@ -6,6 +6,7 @@
 ```bash
 conda install pytorch==2.4.1 -c pytorch
 pip install -r requirements.txt
+pip install transformers[torch] accelerate --no-cache-dir
 pip install -U "huggingface_hub[cli]"
 ```
 3. Run `wandb login` to finish setting up weights & biases for experiment tracking (you will need to have a [weights & biases account](https://wandb.ai/login)).  

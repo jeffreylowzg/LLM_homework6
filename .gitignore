@@ -1,2 +1,5 @@
 data/sample_5_percent.csv
 data/sample_5_percent.json
+data/sample_5_percent.jsonl
+models/*
+wandb/*
