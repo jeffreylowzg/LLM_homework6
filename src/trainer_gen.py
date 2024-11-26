@@ -13,7 +13,7 @@ parser.add_argument("--run_name")
 parser.add_argument("--output_dir")
 parser.add_argument("--data_dir", default="data")
 parser.add_argument("--wandb_proj", default="llms-hw6")
-parser.add_argument("--max_length", default=512)
+parser.add_argument("--max_length", default=256)
 parser.add_argument("--debug", action="store_true")
 args = parser.parse_args()
 
