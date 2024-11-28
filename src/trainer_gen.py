@@ -13,7 +13,7 @@ parser.add_argument("--run_name")
 parser.add_argument("--output_dir")
 parser.add_argument("--data_dir", default="data")
 parser.add_argument("--wandb_proj", default="llms-hw6")
-parser.add_argument("--max_length", default=256)
+parser.add_argument("--max_length", type=int, default=256)
 parser.add_argument("--debug", action="store_true")
 args = parser.parse_args()
 
@@ -41,7 +41,7 @@ model.config.pad_token_id = tokenizer.pad_token_id
 lora_config = LoraConfig(
     task_type="CAUSAL_LM",   
     inference_mode=False,
-    r=16,                  
+    r=4,                  
     lora_alpha=32,         
     lora_dropout=0.05   
 )    
@@ -76,7 +76,7 @@ training_args = TrainingArguments(
     num_train_epochs=3,
     per_device_train_batch_size=128,
     per_device_eval_batch_size=128,
-    # gradient_accumulation_steps=4,
+    # gradient_accumulation_steps=2,
     learning_rate=1e-4,        # Adjusted for PEFT
     
     save_strategy="steps",     
