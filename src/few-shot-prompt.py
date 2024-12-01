@@ -39,30 +39,35 @@ def load_sample_prompts(file_path: str, num_shots: int, mode: str) -> Dataset:
 
     return Dataset.from_list(selected_examples)
 
-def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict) -> str:
+def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict, tokenizer, truncate_tokens: int = 100) -> str:
     """
     Create a few-shot prompt using the sample prompts and a test example.
     
     Args:
         sample_prompts (Dataset): Dataset containing the few-shot examples.
         test_example (dict): A single test example to append for classification.
-        
+        tokenizer: The tokenizer to truncate text to a specific token length.
+        truncate_tokens (int): Maximum number of tokens for each few-shot example.
+
     Returns:
         str: A complete prompt string.
     """
     examples = []
     label_map = {0: "AI-generated", 1: "Human-generated"}
 
-    # Add the few-shot examples
+    # Add the few-shot examples with truncation
     for example in sample_prompts:
         text = example["text"]
         label = example["label"]
         label_text = label_map.get(label, "Human-generated")  # Default to 'Human-generated'
 
-        example_str = f"Text: {text}\nLabel: {label_text}\n"
+        # Truncate few-shot examples only
+        truncated_text = tokenizer.decode(tokenizer(text, truncation=True, max_length=truncate_tokens)["input_ids"], skip_special_tokens=True)
+
+        example_str = f"Text: {truncated_text}\nLabel: {label_text}\n"
         examples.append(example_str)
 
-    # Add the test example for classification
+    # Add the test example for classification without truncation
     test_text = test_example["text"]
     examples.append(f"Text: {test_text}\nLabel:")
 
@@ -105,10 +110,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Few-shot learning classification script.")
     parser.add_argument("--num_shots", type=int, required=True, help="Number of examples to include in the few-shot prompt.")
     parser.add_argument("--sample_prompts", type=str, default="./data/sample_prompt.jsonl", help="Path to the JSONL file containing prompt samples.")
-    parser.add_argument("--data_path", type=str, default="./data/test.jsonl", help="Path to the JSONL test dataset.")
-    parser.add_argument("--num_test_samples", type=int, default=1, help="Number of random test samples to evaluate.")
+    parser.add_argument("--data_path", type=str, default="./data/test-short.jsonl", help="Path to the JSONL test dataset.")
     parser.add_argument("--model_path", type=str, default="./models/pythia-160m", help="Path to the pre-trained language model.")
     parser.add_argument("--mode", type=str, choices=["split", "random"], required=True, help="Few-shot selection mode: 'split' or 'random'.")
+    parser.add_argument("--batch_mode", action="store_true", help="Evaluate the entire dataset in batch mode, only output accuracy.")
+    parser.add_argument("--short_prompt", action="store_true", help="Use truncated prompts for few-shot examples.")
     args = parser.parse_args()
 
     # Load sample prompts based on mode
@@ -116,10 +122,6 @@ if __name__ == "__main__":
 
     # Load the test dataset
     test_dataset = load_dataset("json", data_files=args.data_path, split="train")
-
-    # Select random test samples
-    num_test_samples = min(args.num_test_samples, len(test_dataset))
-    random_test_samples = random.sample(list(test_dataset), num_test_samples)
 
     # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
@@ -129,22 +131,29 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    # Classify each example in the test dataset using the few-shot prompt
-    results = []
-    for test_example in random_test_samples:
-        # Construct the prompt
-        prompt = make_few_shot_prompt(sample_prompts, test_example)
-        
-        # Print the constructed prompt for debugging
-        print("Constructed Prompt:")
-        print(prompt)
-        print("=" * 80)
+    if args.batch_mode:
+        # Batch evaluation
+        correct_predictions = 0
+        total_predictions = len(test_dataset)
 
-        # Generate prediction
+        for test_example in test_dataset:
+            prompt = make_few_shot_prompt(sample_prompts, test_example, tokenizer, truncate_tokens=100 if args.short_prompt else None)
+            predicted_label = classify_text_with_prompt(prompt, model, tokenizer)
+            true_label = "Human-generated" if test_example["label"] == 1 else "AI-generated"
+            if predicted_label == true_label:
+                correct_predictions += 1
+
+        accuracy = correct_predictions / total_predictions * 100
+        print(f"Batch Evaluation Accuracy: {accuracy:.2f}%")
+    else:
+        # Non-batch evaluation (evaluate one random test example)
+        test_example = random.choice(test_dataset)
+        prompt = make_few_shot_prompt(sample_prompts, test_example, tokenizer, truncate_tokens=100 if args.short_prompt else None)
         predicted_label = classify_text_with_prompt(prompt, model, tokenizer)
-        results.append({"text": test_example["text"], "true_label": test_example["label"], "predicted_label": predicted_label})
+        true_label = "Human-generated" if test_example["label"] == 1 else "AI-generated"
 
-    # Print the results
-    for result in results:
-        print(f"True Label: {'Human-generated' if result['true_label'] == 1 else 'AI-generated'}")
-        print(f"Predicted Label: {result['predicted_label']}\n")
+        # Print result for the single test example
+        print(f"Few-shot prompt used:")
+        print(prompt)
+        print(f"\nTrue Label: {true_label}")
+        print(f"Predicted Label: {predicted_label}")
