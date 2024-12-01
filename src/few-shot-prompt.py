@@ -6,11 +6,38 @@ import argparse
 import random
 import sys
 
-def load_sample_prompts(file_path: str, num_shots: int) -> Dataset:
-    """Load the few-shot prompt examples from a JSONL file."""
+def load_sample_prompts(file_path: str, num_shots: int, mode: str) -> Dataset:
+    """
+    Load the few-shot prompt examples from a JSONL file with the specified mode.
+
+    Args:
+        file_path (str): Path to the JSONL file containing few-shot examples.
+        num_shots (int): Number of examples to include in the few-shot prompt.
+        mode (str): Mode of selection - "split" or "random".
+
+    Returns:
+        Dataset: A dataset containing the selected few-shot examples.
+    """
     dataset = load_dataset("json", data_files=file_path, split="train")
-    dataset = dataset.select(range(num_shots))  # Select only the required number of examples
-    return dataset
+    
+    if mode == "split":
+        # Ensure balanced selection of labels (as close as possible)
+        label_buckets = {0: [], 1: []}
+        for example in dataset:
+            label_buckets[example["label"]].append(example)
+        
+        # Select equal numbers from each label, or as close as possible
+        selected_examples = []
+        num_per_label = num_shots // 2
+        for label in label_buckets:
+            selected_examples.extend(random.sample(label_buckets[label], min(num_per_label, len(label_buckets[label]))))
+    elif mode == "random":
+        # Randomly sample examples
+        selected_examples = random.sample(list(dataset), num_shots)
+    else:
+        raise ValueError("Invalid mode. Choose either 'split' or 'random'.")
+
+    return Dataset.from_list(selected_examples)
 
 def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict) -> str:
     """
@@ -81,10 +108,11 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, default="./data/test.jsonl", help="Path to the JSONL test dataset.")
     parser.add_argument("--num_test_samples", type=int, default=1, help="Number of random test samples to evaluate.")
     parser.add_argument("--model_path", type=str, default="./models/pythia-160m", help="Path to the pre-trained language model.")
+    parser.add_argument("--mode", type=str, choices=["split", "random"], required=True, help="Few-shot selection mode: 'split' or 'random'.")
     args = parser.parse_args()
 
-    # Load sample prompts
-    sample_prompts = load_sample_prompts(args.sample_prompts, args.num_shots)
+    # Load sample prompts based on mode
+    sample_prompts = load_sample_prompts(args.sample_prompts, args.num_shots, args.mode)
 
     # Load the test dataset
     test_dataset = load_dataset("json", data_files=args.data_path, split="train")
