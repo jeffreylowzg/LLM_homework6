@@ -52,12 +52,11 @@ model.print_trainable_parameters()  # Check trainable parameters
 
 # Load the split datasets
 if args.debug: 
-    dataset = load_dataset("json", data_files=f"{args.data_dir}/processed_test.jsonl", split="train[0:10]")
+    dataset = load_dataset("json", data_files=f"{args.data_dir}/processed_test.jsonl", split="train[0:128]")
     tokenized_train = preprocess_dataset(tokenizer, args.max_length, dataset)
     tokenized_dev = preprocess_dataset(tokenizer, args.max_length, dataset)
     tokenized_test = preprocess_dataset(tokenizer, args.max_length, dataset)
     max_steps = 10
-
 
 else:
     dataset = load_dataset("json", data_files={split: f"{args.data_dir}/processed_{split}.jsonl" for split in ["train", "dev", "test"]})
@@ -74,9 +73,9 @@ training_args = TrainingArguments(
     overwrite_output_dir=True,
     max_steps=max_steps, 
     num_train_epochs=3,
-    per_device_train_batch_size=128,
-    per_device_eval_batch_size=128,
-    # gradient_accumulation_steps=2,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
+    gradient_accumulation_steps=4,
     learning_rate=1e-4,        # Adjusted for PEFT
     
     save_strategy="steps",     
@@ -84,8 +83,9 @@ training_args = TrainingArguments(
 
     logging_strategy="steps",
     log_level='info',
-    logging_steps=100,
-    eval_steps=100,
+    logging_steps=400,
+    eval_steps=400,
+    save_steps=400,
     metric_for_best_model="loss",
     evaluation_strategy="steps",
 
@@ -97,6 +97,7 @@ training_args = TrainingArguments(
     fp16=True,                 
     report_to="wandb",
     run_name=args.run_name,
+    remove_unused_columns=True
 )
 
 # Initialize the Trainer
