@@ -22,10 +22,16 @@ def generate_balanced_samples(input_path: str, output_path: str, num_samples: in
     for example in dataset:
         label_buckets[example["label"]].append(example)
 
-    # Select examples for each label
+    # Sort examples in each label bucket by length of their text
+    for label in label_buckets:
+        label_buckets[label].sort(key=lambda x: len(x["text"]))
+
+    # Select examples for each label with similar lengths
     selected_samples = []
     for label, examples in label_buckets.items():
-        selected_samples.extend(examples[:num_per_label])  # Take up to `num_per_label` examples per label
+        # Select num_per_label examples evenly distributed by length
+        step = max(1, len(examples) // num_per_label)
+        selected_samples.extend(examples[i] for i in range(0, len(examples), step)[:num_per_label])
 
     # Save selected examples to a new JSONL file
     with open(output_path, "w") as f:

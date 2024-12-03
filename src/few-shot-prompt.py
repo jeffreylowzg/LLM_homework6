@@ -54,22 +54,23 @@ def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict, tokenizer)
         str: A complete prompt string.
     """
     examples = []
-    label_map = {0: "AI-generated", 1: "Human-generated"}
+    label_map = {1: "AI", 0: "Human"}
 
     # Add the few-shot examples with truncation
     for example in sample_prompts:
         text = example["text"]
         label = example["label"]
         instruction = example["instructions"]
-        label_text = label_map.get(label, "Human-generated")  # Default to 'Human-generated'
+        label_text = "Human" if label == 0 else "AI"
         
-        example_str = f"Text: {text}\n{instruction}\nLabel: {label_text}\n"
+        # example_str = f"Text: {text}\n{instruction}\nLabel: {label_text}\n"
+        example_str = f"Based on the task instruction, determine if the response is written by a human, or AI generated.\nInstruction: {instruction}\n\nResponse: {text}\n\nThe response is written by: {label_text}\n"
         examples.append(example_str)
 
     # Add the test example for classification without truncation
     test_text = test_example["text"]
     instruction_text = test_example["instructions"]
-    prompt = f"Based on the task instruction, determine if the response is written by a human, or AI generated.\n{instruction_text}\n\nResponse: {test_text}\n\nThe response is written by:"
+    prompt = f"Based on the task instruction, determine if the response is written by a human, or AI generated.\nInstruction: {instruction_text}\n\nResponse: {test_text}\n\nThe response is written by: "
     examples.append(prompt)
 
     # Combine examples into the final prompt
@@ -108,8 +109,8 @@ def classify_text_with_prompt(prompt: str, model, tokenizer) -> str:
 
     # Indices to extract
     
-    AI_logits = outputs.logits[:, -1, tokenizer.encode("AI")]
-    human_logits = outputs.logits[:, -1, tokenizer.encode("human")]
+    AI_logits = outputs.logits[:, -1, tokenizer.encode("AI")[-1]]
+    human_logits = outputs.logits[:, -1, tokenizer.encode("human")[-1]]
 
     # # Compare logits and print results accordingly
     if human_logits > AI_logits:
@@ -137,7 +138,7 @@ if __name__ == "__main__":
     test_dataset = load_dataset("json", data_files=args.data_path, split="train")
     # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-    model = AutoModelForCausalLM.from_pretrained(args.model_path)
+    model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.bfloat16)
 
     # Move model to appropriate device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -147,10 +148,11 @@ if __name__ == "__main__":
         # Batch evaluation
         correct_predictions = 0
         total_predictions = len(test_dataset)
-
+        print(total_predictions)
         for test_example in test_dataset:
             prompt = make_few_shot_prompt(sample_prompts, test_example, tokenizer)
             predicted_label = classify_text_with_prompt(prompt, model, tokenizer)
+            # print(f"predict: {predicted_label} actual: {test_example["label"]}")
             if predicted_label == test_example["label"]:
                 correct_predictions += 1
 
@@ -165,5 +167,5 @@ if __name__ == "__main__":
         # Print result for the single test example
         print(f"Few-shot prompt used:\n\n")
         print(prompt)
-        print(f"\nTrue Label: {"Human-generated" if test_example["label"] == 0 else "AI-generated"}")
-        print(f"Predicted Label: {"Human-generated" if predicted_label == 0 else "AI-generated"}")
+        print(f"\nTrue Label: {"Human" if test_example["label"] == 0 else "AI"}")
+        print(f"Predicted Label: {"Human" if predicted_label == 0 else "AI"}")
