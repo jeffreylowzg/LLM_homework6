@@ -44,7 +44,7 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, dataset: datas
         processed_dat = dataset.map(
             _preprocessing_function,
             batched=True,
-            remove_columns=["text", "instructions", "label"],
+            remove_columns=["text", "instructions"],
         )
 
     processed_dat = processed_dat.filter(lambda sample: len(sample["input_ids"]) < max_length)

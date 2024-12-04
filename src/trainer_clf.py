@@ -6,15 +6,17 @@ import numpy as np
 import os
 import argparse
 import json
+from utils import *
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_dir")
 parser.add_argument("--run_name")
 parser.add_argument("--output_dir")
-parser.add_argument("--num_freeze", type=int, default=6)
+parser.add_argument("--max_length", type=int, default=256)
 parser.add_argument("--data_dir", default="data")
 parser.add_argument("--wandb_proj", default="llms-hw6")
+parser.add_argument("--debug", action="store_true", default=False, required=False)
 args = parser.parse_args()
 
 print("\n---Parsed arguments:---")
@@ -27,7 +29,7 @@ os.environ["WANDB_PROJECT"] = args.wandb_proj
 # Paths for train and test data
 train_data_path = f"{args.data_dir}/processed_train.jsonl"
 dev_data_path = f"{args.data_dir}/processed_dev.jsonl"
-test_data_path = f"{args.data_dir}/processed_test.jsonl"
+test_data_path = f"{args.data_dir}/balanced_filtered_test.jsonl"
 
 # Specify the local directory where the model was downloaded
 model_path = args.model_dir
@@ -48,41 +50,43 @@ model.config.pad_token_id = tokenizer.pad_token_id
 lora_config = LoraConfig(
     task_type="SEQ_CLS",   # Sequence classification
     inference_mode=False,
-    r=16,                  # LoRA rank
+    r=4,                  # LoRA rank
     lora_alpha=32,         # Scaling factor
-    lora_dropout=0.1       # Regularization
+    lora_dropout=0.05       # Regularization
 )
 
 # Wrap the model with LoRA
 model = get_peft_model(model, lora_config)
 
-# Freeze the first few layers of GPT-NeoX
-num_layers_to_freeze = args.num_freeze  # Adjust based on model depth and dataset size
+# # Freeze the first few layers of GPT-NeoX
+# num_layers_to_freeze = args.num_freeze  # Adjust based on model depth and dataset size
 
-# For GPT-NeoX, transformer layers are in model.base_model.gpt_neox.layers
-for layer in model.base_model.gpt_neox.layers[:num_layers_to_freeze]:
-    for param in layer.parameters():
-        param.requires_grad = False
+# # For GPT-NeoX, transformer layers are in model.base_model.gpt_neox.layers
+# for layer in model.base_model.gpt_neox.layers[:num_layers_to_freeze]:
+#     for param in layer.parameters():
+#         param.requires_grad = False
 
 # Always ensure the classification head and LoRA layers are trainable
 model.print_trainable_parameters()  # Check trainable parameters
 
 # Load the split datasets
-train_dataset = load_dataset("json", data_files=train_data_path, split="train")
-dev_dataset = load_dataset("json", data_files=dev_data_path, split="train")
-test_dataset = load_dataset("json", data_files=test_data_path, split="train")
+# Load the split datasets
+if args.debug: 
+    dataset = load_dataset("json", data_files=f"{args.data_dir}/processed_test.jsonl", split="train[0:128]")
+    tokenized_train = preprocess_dataset(tokenizer, args.max_length, dataset)
+    tokenized_dev = preprocess_dataset(tokenizer, args.max_length, dataset)
+    tokenized_test = preprocess_dataset(tokenizer, args.max_length, dataset)
+    max_steps = 10
 
-# Preprocessing function for tokenization and label mapping
-def preprocess_function(examples):
-    # Tokenize the text
-    inputs = tokenizer(examples["text"], padding="max_length", truncation=True, max_length=128)
-    inputs["labels"] = examples["label"]  # Use label for classification
-    return inputs
+else:
+    dataset = load_dataset("json", data_files={split: f"{args.data_dir}/processed_{split}.jsonl" for split in ["train", "dev", "test"]})
+    tokenized_train = preprocess_dataset(tokenizer, args.max_length, dataset['train'])
+    tokenized_dev = preprocess_dataset(tokenizer, args.max_length, dataset['dev'])
+    tokenized_test = preprocess_dataset(tokenizer, args.max_length, dataset['test'])
 
-# Tokenize the datasets
-tokenized_train_dataset = train_dataset.map(preprocess_function, batched=True)
-tokenized_dev_dataset = dev_dataset.map(preprocess_function, batched=True)
-tokenized_test_dataset = test_dataset.map(preprocess_function, batched=True)
+    print(f"Dataset sizes post-filtering: \n\ttrain: {tokenized_train.num_rows}\n\tdev: {tokenized_dev.num_rows}\n\ttest: {tokenized_test.num_rows}")
+    max_steps = -1
+
 
 acc_metric = evaluate.load("accuracy")
 f1_metric = evaluate.load("f1")
@@ -132,8 +136,8 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_train_dataset,
-    eval_dataset=tokenized_dev_dataset,
+    train_dataset=tokenized_train,
+    eval_dataset=tokenized_dev,
     tokenizer=tokenizer,
     compute_metrics=compute_metrics,
     callbacks = [EarlyStoppingCallback(early_stopping_patience=5, early_stopping_threshold=1e-4)]
@@ -149,7 +153,7 @@ tokenizer.save_pretrained(args.output_dir)
 print(f"Model fine-tuning completed and saved to '{args.output_dir}'")
 
 # Evaluate the model
-eval_results = trainer.evaluate(eval_dataset=tokenized_test_dataset)
+eval_results = trainer.evaluate(eval_dataset=tokenized_test)
 print(f"Evaluation Results: {eval_results}")
 
 with open(f"{args.output_dir}/evaluate.json", "w") as f: 
