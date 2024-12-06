@@ -1,0 +1,2 @@
+python src/few-shot-prompt.py --num_shots 5 --mode split --data_path data/balanced_filtered_test.jsonl --batch_mode --model_path models/pythia-1b-deduped/
+python src/few-shot-prompt.py --num_shots 5 --mode split --data_path data/balanced_filtered_test.jsonl --batch_mode --model_path models/pythia-1b-deduped/ --expert_mode

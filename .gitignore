@@ -1,3 +1,4 @@
 data/*
 models/*
 wandb/*
+pythia-160m_clf_r4_no_freeze/*
