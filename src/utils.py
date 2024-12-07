@@ -9,6 +9,14 @@ def _create_prompt(entry, instruct_key="instructions", response_key="text"):
     entry["input_text"] = prompt
     return entry
 
+def _create_prompt_for_generation(entry, instruct_key="instructions"): 
+    """
+        This prompt format follows DPO training format, for generating response based on given instructions.
+    """
+    prompt = "Question: " + entry[instruct_key] + "\n\nAnswer: "
+    entry["input_text"] = prompt
+    return entry
+
 def _create_prompt_wo_label(entry, instruct_key="instructions", response_key="text"): 
     prompt = f"Based on the task instruction, determine if the response is written by a human, or AI generated.\nInstruction: {entry[instruct_key]}\n\nResponse: {entry[response_key]}\n\nThe response is written by: "
 
@@ -23,13 +31,13 @@ def preprocess_batch(batch, tokenizer, max_length):
         truncation=True,
     )
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, dataset: datasets.Dataset, test=False):
+def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, dataset: datasets.Dataset, test=False, generate=False):
     """Format & tokenize it so it is ready for training
     :param tokenizer (AutoTokenizer): Model Tokenizer
     :param max_length (int): Maximum number of tokens to emit from tokenizer
     """
     
-    if test: 
+    if test and not generate: 
         dataset = dataset.map(_create_prompt_wo_label)
         _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
         processed_dat = dataset.map(
@@ -37,6 +45,15 @@ def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, dataset: datas
             batched=True,
             # remove_columns=["text", "instructions", "label"],
         )
+
+    elif generate: 
+        dataset = dataset.map(_create_prompt_for_generation)
+        _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
+        processed_dat = dataset.map(
+            _preprocessing_function,
+            batched=True,
+            remove_columns=["text", "instructions", "label"],
+        ) 
 
     else: 
         dataset = dataset.map(_create_prompt)
