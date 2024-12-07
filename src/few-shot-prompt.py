@@ -4,9 +4,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import argparse
 import random
-import sys
 import evaluate
-from utils import *
 
 def load_sample_prompts(file_path: str, num_shots: int, mode: str) -> Dataset:
     """
@@ -21,7 +19,6 @@ def load_sample_prompts(file_path: str, num_shots: int, mode: str) -> Dataset:
         Dataset: A dataset containing the selected few-shot examples.
     """
     dataset = load_dataset("json", data_files=file_path, split="train")
-    
     if mode == "split":
         # Ensure balanced selection of labels (as close as possible)
         label_buckets = {0: [], 1: []}
@@ -38,35 +35,31 @@ def load_sample_prompts(file_path: str, num_shots: int, mode: str) -> Dataset:
         selected_examples = random.sample(list(dataset), num_shots)
     else:
         raise ValueError("Invalid mode. Choose either 'split' or 'random'.")
-
     return Dataset.from_list(selected_examples)
 
 def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict, tokenizer, expert_mode: bool = False) -> str:
     """
     Create a few-shot prompt using the sample prompts and a test example.
-    
+
     Args:
         sample_prompts (Dataset): Dataset containing the few-shot examples.
         test_example (dict): A single test example to append for classification.
         tokenizer: The tokenizer to truncate text to a specific token length.
         expert_mode (bool): If True, prepend an expert introduction to the prompt.
-    
+
     Returns:
         str: A complete prompt string.
     """
     examples = []
-    label_map = {1: "AI", 0: "Human"}
-
     # Add the few-shot examples with truncation
     for example in sample_prompts:
         text = example["text"]
         label = example["label"]
         instruction = example["instructions"]
         label_text = "Human" if label == 0 else "AI"
-        
         example_str = f"Based on the task instruction, determine if the response is written by a human, or AI generated.\nInstruction: {instruction}\n\nResponse: {text}\n\nThe response is written by: {label_text}\n"
         examples.append(example_str)
-
+    
     # Add the test example for classification
     test_text = test_example["text"]
     instruction_text = test_example["instructions"]
@@ -80,20 +73,21 @@ def make_few_shot_prompt(sample_prompts: Dataset, test_example: dict, tokenizer,
     if expert_mode:
         expert_prefix = "You are a highly intelligent classifier trained to distinguish between human-written text and AI-generated text.\n\n"
         complete_prompt = expert_prefix + complete_prompt
-
     return complete_prompt
 
-def classify_text_with_prompt(prompt: str, model, tokenizer) -> str:
+def classify_text_with_prompt(prompt: str, model, tokenizer, true_label: int, threshold: float) -> dict:
     """
     Classify a single text using the model and the few-shot prompt.
-    
+
     Args:
         prompt (str): The few-shot learning prompt.
         model: The pre-trained language model.
         tokenizer: The tokenizer for the language model.
-        
+        true_label (int): The true label of the test example (0 for Human, 1 for AI).
+        threshold (float): The threshold value to decide the predicted label.
+
     Returns:
-        str: The predicted label ('Human-generated' or 'AI-generated').
+        dict: A dictionary containing probabilities, predicted label, and true label.
     """
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
     inputs = {key: value.to(device) for key, value in inputs.items()}
@@ -106,11 +100,19 @@ def classify_text_with_prompt(prompt: str, model, tokenizer) -> str:
     AI_logits = outputs.logits[:, -1, tokenizer.encode("AI")[-1]]
     human_logits = outputs.logits[:, -1, tokenizer.encode("human")[-1]]
 
-    # Compare logits and print results accordingly
-    if human_logits > AI_logits:
-        return 0
-    else:
-        return 1
+    # Apply softmax to get probabilities
+    logits = torch.cat([human_logits, AI_logits], dim=-1)  # Combine logits into a single tensor
+    probabilities = torch.nn.functional.softmax(logits, dim=-1)  # Apply softmax
+    # Prepare the output dictionary
+    result = {
+        "probabilities": {
+            "Human": probabilities[0].item(),
+            "AI": probabilities[1].item(),
+        },
+        "true_label": true_label,
+        "predicted_label": 0 if probabilities[0] > threshold else 1,
+    }
+    return result
 
 if __name__ == "__main__":
     # Parse command-line arguments
@@ -122,72 +124,44 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, choices=["split", "random"], required=True, help="Few-shot selection mode: 'split' or 'random'.")
     parser.add_argument("--expert_mode", action="store_true", help="Enable expert mode with additional context.")
     parser.add_argument("--batch_mode", action="store_true", help="Evaluate the entire dataset in batch mode, only output accuracy.")
+    parser.add_argument("--threshold", type=float, default=0.5, help="Threshold for classification as Human.")
     args = parser.parse_args()
 
-    max_length = 256
-
-    # Load sample prompts based on mode
+    # Load the model, tokenizer, and datasets
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sample_prompts = load_sample_prompts(args.sample_prompts, args.num_shots, args.mode)
-
-    # Load the test dataset
     test_dataset = load_dataset("json", data_files=args.data_path, split="train")
-    # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.bfloat16)
-
-    # Move model to appropriate device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    predictions = []
-    true_labels = []
-
     if args.batch_mode:
-        # Batch evaluation
+        # Evaluate in batch mode
+        results = []
         correct_predictions = 0
         total_predictions = len(test_dataset)
         for test_example in test_dataset:
             prompt = make_few_shot_prompt(sample_prompts, test_example, tokenizer, expert_mode=args.expert_mode)
-            predicted_label = classify_text_with_prompt(prompt, model, tokenizer)
-            if predicted_label == test_example["label"]:
+            classification_result = classify_text_with_prompt(prompt, model, tokenizer, true_label=test_example["label"], threshold=args.threshold)
+            results.append(classification_result)
+            if classification_result["predicted_label"] == test_example["label"]:
                 correct_predictions += 1
-            predictions.append(predicted_label)
-            true_labels.append(test_example["label"])
 
+        # Calculate accuracy
         accuracy = correct_predictions / total_predictions * 100
         print(f"Batch Evaluation Accuracy: {accuracy:.2f}%")
 
-        precision_metric = evaluate.load("precision")
-        recall_metric = evaluate.load("recall")
-        f1_metric = evaluate.load("f1")
-        accuracy_metric = evaluate.load("accuracy")
-
-        acc = accuracy_metric.compute(references=true_labels, predictions=predictions)
-        recall = recall_metric.compute(references=true_labels, predictions=predictions)
-        f1 = f1_metric.compute(references=true_labels, predictions=predictions)
-        precision = precision_metric.compute(references=true_labels, predictions=predictions)
-
-        model_path = args.model_path.replace("models", "").replace("/", "")
-
-        expt = f"{model_path}_{args.num_shots}_shot"
-        with open(f"results/{expt}_balanced_metrics.json", "w") as f: 
-            json.dump(
-                {
-                    "accuracy": acc["accuracy"],
-                    "f1": f1["f1"],
-                    "precision": precision["precision"], 
-                    "recall": recall["recall"]
-                }, 
-                f,
-                indent=4
-            )
+        # Save probabilities and labels to a JSON file
+        with open("probabilities_results.json", "w") as f:
+            json.dump(results, f, indent=4)
     else:
-        # Non-batch evaluation (evaluate one random test example)
+        # Evaluate a single example
         test_example = random.choice(test_dataset)
         prompt = make_few_shot_prompt(sample_prompts, test_example, tokenizer, expert_mode=args.expert_mode)
-        predicted_label = classify_text_with_prompt(prompt, model, tokenizer)
+        classification_result = classify_text_with_prompt(prompt, model, tokenizer, true_label=test_example["label"], threshold=args.threshold)
 
         # Print result for the single test example
         print(f"Few-shot prompt used:\n\n{prompt}")
         print(f"\nTrue Label: {'Human' if test_example['label'] == 0 else 'AI'}")
-        print(f"Predicted Label: {'Human' if predicted_label == 0 else 'AI'}")
+        print(f"Predicted Label: {'Human' if classification_result['predicted_label'] == 0 else 'AI'}")
+        print(f"Probabilities: {classification_result['probabilities']}")
