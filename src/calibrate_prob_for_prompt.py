@@ -1,5 +1,6 @@
 import json
 import matplotlib.pyplot as plt
+import argparse
 
 
 def load_json(file_path):
@@ -76,8 +77,14 @@ def visualize_distribution_with_histogram(probabilities, true_labels):
 
 
 def main():
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Analyze and visualize probability results.")
+    parser.add_argument("--model_name", type=str, required=True,
+                        help="Model name, e.g., pythia-160m, pythia-1b, llama-3.2-1b-instruct.")
+    args = parser.parse_args()
+    
     # Path to the probabilities JSON file
-    input_path = "probabilities_results.json"
+    input_path = f"probabilities_results_{args.model_name}.json"
     
     # Load data and analyze spread
     data = load_json(input_path)

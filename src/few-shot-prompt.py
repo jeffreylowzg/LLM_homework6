@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_shots", type=int, required=True, help="Number of examples to include in the few-shot prompt.")
     parser.add_argument("--sample_prompts", type=str, default="./data/sample_prompt.jsonl", help="Path to the JSONL file containing prompt samples.")
     parser.add_argument("--data_path", type=str, default="./data/test-short.jsonl", help="Path to the JSONL test dataset.")
-    parser.add_argument("--model_path", type=str, default="./models/pythia-160m", help="Path to the pre-trained language model.")
+    parser.add_argument("--model_path", type=str, default="models/pythia-160m", help="Path to the pre-trained language model.")
     parser.add_argument("--mode", type=str, choices=["split", "random"], required=True, help="Few-shot selection mode: 'split' or 'random'.")
     parser.add_argument("--expert_mode", action="store_true", help="Enable expert mode with additional context.")
     parser.add_argument("--batch_mode", action="store_true", help="Evaluate the entire dataset in batch mode, only output accuracy.")
@@ -131,6 +131,8 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sample_prompts = load_sample_prompts(args.sample_prompts, args.num_shots, args.mode)
     test_dataset = load_dataset("json", data_files=args.data_path, split="train")
+    shuffled_dataset = test_dataset.shuffle(seed=42)
+    test_dataset = shuffled_dataset.select(range(int(0.1 * len(test_dataset))))
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.bfloat16)
     model.to(device)
@@ -152,7 +154,8 @@ if __name__ == "__main__":
         print(f"Batch Evaluation Accuracy: {accuracy:.2f}%")
 
         # Save probabilities and labels to a JSON file
-        with open("probabilities_results.json", "w") as f:
+        model_name = args.model_path.replace("models/", "").replace("/", "")
+        with open(f"probabilities_results_{model_name}.json", "w") as f:
             json.dump(results, f, indent=4)
     else:
         # Evaluate a single example
