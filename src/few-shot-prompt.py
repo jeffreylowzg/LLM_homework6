@@ -136,6 +136,8 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(args.model_path)
     model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.bfloat16)
     model.to(device)
+    predictions = []
+    true_labels = []
 
     if args.batch_mode:
         # Evaluate in batch mode
@@ -148,15 +150,38 @@ if __name__ == "__main__":
             results.append(classification_result)
             if classification_result["predicted_label"] == test_example["label"]:
                 correct_predictions += 1
+            predictions.append(classification_result["predicted_label"])
+            true_labels.append(classification_result["true_label"])
 
         # Calculate accuracy
         accuracy = correct_predictions / total_predictions * 100
         print(f"Batch Evaluation Accuracy: {accuracy:.2f}%")
 
+        precision_metric = evaluate.load("precision")
+        recall_metric = evaluate.load("recall")
+        f1_metric = evaluate.load("f1")
+        accuracy_metric = evaluate.load("accuracy")
+        acc = accuracy_metric.compute(references=true_labels, predictions=predictions)
+        recall = recall_metric.compute(references=true_labels, predictions=predictions)
+        f1 = f1_metric.compute(references=true_labels, predictions=predictions)
+        precision = precision_metric.compute(references=true_labels, predictions=predictions)
+
         # Save probabilities and labels to a JSON file
-        model_name = args.model_path.replace("models/", "").replace("/", "")
+        model_path = args.model_path.replace("models", "").replace("/", "")
+        model_name = f"{model_path}_{args.num_shots}_shot"
         with open(f"probabilities_results_{model_name}.json", "w") as f:
             json.dump(results, f, indent=4)
+        with open(f"results/{model_name}_balanced_metrics.json", "w") as f: 
+            json.dump(
+                {
+                    "accuracy": acc["accuracy"],
+                    "f1": f1["f1"],
+                    "precision": precision["precision"], 
+                    "recall": recall["recall"]
+                }, 
+                f,
+                indent=4
+            )
     else:
         # Evaluate a single example
         test_example = random.choice(test_dataset)

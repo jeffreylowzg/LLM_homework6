@@ -62,8 +62,8 @@ def visualize_distribution_with_histogram(probabilities, true_labels):
     human_probs = [p for p, label in zip(probabilities, true_labels) if label == 1]
     ai_probs = [p for p, label in zip(probabilities, true_labels) if label == 0]
     
-    axes[1].hist(human_probs, bins=bins, color='green', alpha=0.6, label='True Label: 1 (Human)')
-    axes[1].hist(ai_probs, bins=bins, color='red', alpha=0.6, label='True Label: 0 (AI)')
+    axes[1].hist(human_probs, bins=bins, color='green', alpha=0.6, label='True Label: 0 (Human)')
+    axes[1].hist(ai_probs, bins=bins, color='red', alpha=0.6, label='True Label: 1 (AI)')
     axes[1].set_xlim(0, 1)
     axes[1].set_xlabel("Probability of Human")
     axes[1].set_ylabel("Count")
