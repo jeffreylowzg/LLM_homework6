@@ -35,11 +35,11 @@ wandb login
 python src/process_data.py
 ```
 
-Further, we provide `balanced_filtered_test.jsonl` for replicability across experiments. This test set was derived from randomly sampling an equal number of samples from both classes from the test datasplit. 
+Further, we provide `data/balanced_filtered_test.jsonl` for replicability across experiments. This test set was derived from randomly sampling an equal number of samples from both classes from the test datasplit. 
 
 ## In-context learning
 
-In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. We upload the sample prompts that we use for replicability. These prompts were randomly sampled from the train datasplit. 
+In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. We upload the sample prompts at `data/sample_prompts.json` that we use for replicability. These prompts were randomly sampled from the train datasplit. 
 
 ### 0 shot prompt:
 
