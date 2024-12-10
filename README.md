@@ -34,12 +34,9 @@ wandb login
 python src/process_data.py
 ```
 
-
-
-
 ## In-context learning
 
-In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. 
+In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. We upload the sample prompts that we use for replicability. These prompts were randomly sampled from the train datasplit. 
 
 ### 0 shot prompt:
 
