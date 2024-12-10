@@ -106,7 +106,7 @@ python src/trainer_gen.py --model_dir $model_dir  \
                           --output_dir $output_dir 
 ```
 
-expected behavior: runs the PEFT training on pythia-160m with the given run_name and output_dir. LoRA parameters have to be set within the src/trainer_gen.py file.
+**expected behavior:** runs the PEFT training on pythia-160m with the given run_name and output_dir. LoRA parameters have to be set within the src/trainer_gen.py file.
 
 ### Calibration
 
@@ -121,11 +121,15 @@ python src/few-shot-prompt.py --num_shots 2 \
                               --batch_mode
 ```
 
+**expected behavior:** runs batched evaluation on filtered_test.jsonl using 2 shot prompts with a 1 human and 1 AI shot from the sample_prompt.jsonl. A probability spread file will be generated in data/probabilities_results_{model_name}.jsonl
+
 Running the command below will show the probability spread and histogram for analysis.
 
 ```
 python src/calibrate_prob_for_prompt.py --model_name pythia-160m
 ```
+
+**expected behavior:** Visualises the probabilities spread with histogram based on the given model_name.
 
 To test the performance of the model with a new threshold, the following command can be used.
 
@@ -139,7 +143,7 @@ python src/few-shot-prompt.py --num_shots 2 \
                               --threshold 0.8\
 ```
 
-
+**expected behavior:** runs batched evaluation on filtered_test.jsonl using 2 shot prompts with a 1 human and 1 AI shot from the sample_prompt.jsonl with the given threshold.
 
 ### DPO
 
