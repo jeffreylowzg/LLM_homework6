@@ -8,7 +8,7 @@ cd models/pythia-1b-deduped
 huggingface-cli download EleutherAI/pythia-1b-deduped --local-dir .
 cd ../..
 
-mkdir -p models/pythia-1b-deduped-instruct
-cd models/pythia-1b-deduped-instruct
-huggingface-cli download cjiao/pythia-1b-deduped-instruct-ckpt-2 --local-dir .
+mkdir -p models/pythia-160m
+cd models/pythia-160m
+huggingface-cli download EleutherAI/pythia-160m --local-dir .
 cd ../..
