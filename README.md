@@ -3,7 +3,7 @@
 ```
 %install necessary packages
 pip install -U "huggingface_hub[cli]"
-pip install torch transformers[torch] numpy tqdm datasets peft accelerate
+pip install torch transformers[torch] numpy tqdm datasets peft accelerate evaluate
 ```
 
 ```
