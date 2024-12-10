@@ -45,7 +45,7 @@ In our in-context learning experiments, there are 2 sections: few-shot prompts a
 
 ```c
 python src/few-shot-prompt.py --num_shots 0 \
-                              --data_path data/filtered_test.jsonl \
+                              --data_path data/balanced_filtered_test.jsonl \
                               --model_path models/pythia-160m
 ```
 
@@ -58,7 +58,7 @@ python src/few-shot-prompt.py --num_shots 0 \
 ```
 python src/few-shot-prompt.py --num_shots 2 \
                               --sample_prompts data/sample_prompt.jsonl \
-                              --mode split --data_path data/filtered_test.jsonl  \
+                              --mode split --data_path data/balanced_filtered_test.jsonl  \
                               --model_path models/pythia-160m
 ```
 
@@ -72,7 +72,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 python src/few-shot-prompt.py --num_shots 2 \
                               --sample_prompts data/sample_prompt.jsonl \
                               --mode split \
-                              --data_path data/filtered_test.jsonl  \
+                              --data_path data/balanced_filtered_test.jsonl  \
                               --model_path models/pythia-160m \
                               --batch_mode
 ```
@@ -86,7 +86,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 ```
 python src/few-shot-prompt.py --num_shots 2 \
                --sample_prompts data/sample_prompt.jsonl \
-               --mode split --data_path data/filtered_test.jsonl \
+               --mode split --data_path data/balanced_filtered_test.jsonl \
                --model_path models/pythia-160m \
                --expert_mode
 ```
@@ -116,7 +116,7 @@ First run the batched few-shot prompts (depends on how many shots will be calibr
 python src/few-shot-prompt.py --num_shots 2 \
                               --sample_prompts data/sample_prompt.jsonl \
                               --mode split \
-                              --data_path data/filtered_test.jsonl \
+                              --data_path data/balanced_filtered_test.jsonl \
                               --model_path models/pythia-160m \
                               --batch_mode
 ```
@@ -137,7 +137,7 @@ To test the performance of the model with a new threshold, the following command
 python src/few-shot-prompt.py --num_shots 2 \
                               --sample_prompts data/sample_prompt.jsonl \
                               --mode split \
-                              --data_path data/filtered_test.jsonl \
+                              --data_path data/balanced_filtered_test.jsonl \
                               --model_path models/pythia-160m \
                               --batch_mode \ 
                               --threshold 0.8\
