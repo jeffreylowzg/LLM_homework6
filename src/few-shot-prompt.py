@@ -169,7 +169,7 @@ if __name__ == "__main__":
         # Save probabilities and labels to a JSON file
         model_path = args.model_path.replace("models", "").replace("/", "")
         model_name = f"{model_path}_{args.num_shots}_shot"
-        with open(f"probabilities_results_{model_name}.json", "w") as f:
+        with open(f"results/probabilities_results_{model_name}.json", "w") as f:
             json.dump(results, f, indent=4)
         with open(f"results/{model_name}_balanced_metrics.json", "w") as f: 
             json.dump(

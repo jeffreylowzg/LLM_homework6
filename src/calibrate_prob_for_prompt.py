@@ -53,17 +53,17 @@ def visualize_distribution_with_histogram(probabilities, true_labels):
     axes[0].set_yticks([])
     axes[0].set_title("Row Distribution of Human Probabilities Colored by True Label")
     axes[0].grid(alpha=0.3, axis='x')
-    red_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='True Label: 0 (AI)')
-    green_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='True Label: 1 (Human)')
+    red_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='True Label: 0 (Human)')
+    green_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='True Label: 1 (Ai)')
     axes[0].legend(handles=[red_patch, green_patch], loc="upper left")
     
     # Histogram
     bins = 20  # Number of bins
-    human_probs = [p for p, label in zip(probabilities, true_labels) if label == 1]
-    ai_probs = [p for p, label in zip(probabilities, true_labels) if label == 0]
+    human_probs = [p for p, label in zip(probabilities, true_labels) if label == 0]
+    ai_probs = [p for p, label in zip(probabilities, true_labels) if label == 1]
     
-    axes[1].hist(human_probs, bins=bins, color='green', alpha=0.6, label='True Label: 0 (Human)')
-    axes[1].hist(ai_probs, bins=bins, color='red', alpha=0.6, label='True Label: 1 (AI)')
+    axes[1].hist(human_probs, bins=bins, color='red', alpha=0.6, label='True Label: 0 (Human)')
+    axes[1].hist(ai_probs, bins=bins, color='green', alpha=0.6, label='True Label: 1 (AI)')
     axes[1].set_xlim(0, 1)
     axes[1].set_xlabel("Probability of Human")
     axes[1].set_ylabel("Count")
@@ -84,7 +84,7 @@ def main():
     args = parser.parse_args()
     
     # Path to the probabilities JSON file
-    input_path = f"probabilities_results_{args.model_name}.json"
+    input_path = f"results/probabilities_results_{args.model_name}.json"
     
     # Load data and analyze spread
     data = load_json(input_path)

@@ -55,14 +55,6 @@ lora_config = LoraConfig(
 # Wrap the model with LoRA
 model = get_peft_model(model, lora_config)
 
-# # Freeze the first few layers of GPT-NeoX
-# num_layers_to_freeze = args.num_freeze  # Adjust based on model depth and dataset size
-
-# # For GPT-NeoX, transformer layers are in model.base_model.gpt_neox.layers
-# for layer in model.base_model.gpt_neox.layers[:num_layers_to_freeze]:
-#     for param in layer.parameters():
-#         param.requires_grad = False
-
 # Always ensure the classification head and LoRA layers are trainable
 model.print_trainable_parameters()  # Check trainable parameters
 
