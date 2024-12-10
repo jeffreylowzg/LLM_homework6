@@ -7,3 +7,8 @@ mkdir -p models/pythia-1b-deduped
 cd models/pythia-1b-deduped
 huggingface-cli download EleutherAI/pythia-1b-deduped --local-dir .
 cd ../..
+
+mkdir -p models/pythia-160m
+cd models/pythia-160m
+huggingface-cli download EleutherAI/pythia-160m --local-dir .
+cd ../..
