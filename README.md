@@ -1,4 +1,4 @@
-### Setup:
+## Setup:
 
 ```
 %install necessary packages
@@ -37,11 +37,11 @@ python src/process_data.py
 
 
 
-### In-context learning
+## In-context learning
 
 In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. 
 
-#### 0 shot prompt:
+### 0 shot prompt:
 
 ```c
 python src/few-shot-prompt.py --num_shots 0 \
@@ -53,7 +53,7 @@ python src/few-shot-prompt.py --num_shots 0 \
 
 
 
-#### 2 shot prompt:
+### 2 shot prompt:
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
@@ -66,7 +66,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 
 
 
-#### 2 shot prompt(batched):
+### 2 shot prompt(batched):
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
@@ -81,7 +81,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 
 
 
-#### 2 shot prompt(expert role prompt):
+### 2 shot prompt(expert role prompt):
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
@@ -93,7 +93,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 
 **expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset with an expert verbalizer. Inference will be done using 1 test sample appended to the created prompt using pythia-160m
 
-### PEFT
+## PEFT
 
 PEFT lora configurations have to be set within the src/trainer_gen.py file
 
@@ -108,7 +108,7 @@ python src/trainer_gen.py --model_dir $model_dir  \
 
 **expected behavior:** runs the PEFT training on pythia-160m with the given run_name and output_dir. LoRA parameters have to be set within the src/trainer_gen.py file.
 
-### Calibration
+## Calibration
 
 First run the batched few-shot prompts (depends on how many shots will be calibrated). This generates a file that stores the probability spread.
 
@@ -145,7 +145,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 
 **expected behavior:** runs batched evaluation on filtered_test.jsonl using 2 shot prompts with a 1 human and 1 AI shot from the sample_prompt.jsonl with the given threshold.
 
-### DPO
+## DPO
 
 The command below allows the user to download the needed model and extract the data needed for DPO on the human label.
 
@@ -163,7 +163,7 @@ python src/dpo/trainer.py   --model_dir $model_dir \
 
 
 
-### Train classification head
+## Train classification head
 
 The classification head can be trained using the following command. 
 
