@@ -43,7 +43,7 @@ In our in-context learning experiments, there are 2 sections: few-shot prompts a
 
 ### 0 shot prompt:
 
-```c
+```
 python src/few-shot-prompt.py --num_shots 0 \
                               --data_path data/balanced_filtered_test.jsonl \
                               --model_path models/pythia-160m
@@ -62,11 +62,11 @@ python src/few-shot-prompt.py --num_shots 2 \
                               --model_path models/pythia-160m
 ```
 
-**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset. Inference will be done using 1 test sample appended to the created prompt using pythia-160m
+**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the `sample_prompt` dataset. Inference will be done using 1 test sample appended to the created prompt using specified model (in this case, pythia-160m).
 
 
 
-### 2 shot prompt(batched):
+### 2 shot prompt (batched):
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
@@ -77,21 +77,22 @@ python src/few-shot-prompt.py --num_shots 2 \
                               --batch_mode
 ```
 
-**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset. Inference will be done across the entire given filtered_test.jsonl dataset for evaluation
+**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset. Inference will be done across the entire given `balanced_filtered_test.jsonl` dataset for evaluation.
 
 
 
-### 2 shot prompt(expert role prompt):
+### 2 shot prompt (expert role prompt):
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
-               --sample_prompts data/sample_prompt.jsonl \
-               --mode split --data_path data/balanced_filtered_test.jsonl \
-               --model_path models/pythia-160m \
-               --expert_mode
+                              --sample_prompts data/sample_prompt.jsonl \
+                              --mode split \
+                              --data_path data/balanced_filtered_test.jsonl \
+                              --model_path models/pythia-160m \
+                              --expert_mode
 ```
 
-**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset with an expert verbalizer. Inference will be done using 1 test sample appended to the created prompt using pythia-160m
+**expected behavior:** creates a 2 shot prompt with 1 AI and 1 human label from the sample_prompt dataset with an expert verbalizer. Inference will be done using 1 test sample appended to the created prompt using specified model (in this case, pythia-160m)
 
 ## PEFT
 
@@ -99,14 +100,14 @@ PEFT lora configurations have to be set within the src/trainer_gen.py file
 
 ```
 model_dir='models/pythia-160m'
-run_name="pythia-160m_freeze6_lora"
+run_name=[USER-DEFINED] # used to set the output dir, for example: pythia-160m-lora-r4
 output_dir='trained_models'/$run_name
 python src/trainer_gen.py --model_dir $model_dir  \
                           --run_name $run_name \
                           --output_dir $output_dir 
 ```
 
-**expected behavior:** runs the PEFT training on pythia-160m with the given run_name and output_dir. LoRA parameters have to be set within the src/trainer_gen.py file.
+**expected behavior:** runs the PEFT training on pythia-160m with the given run_name and output_dir. LoRA parameters have to be set within the `src/trainer_gen.py` file.
 
 ## Calibration
 
@@ -121,7 +122,7 @@ python src/few-shot-prompt.py --num_shots 2 \
                               --batch_mode
 ```
 
-**expected behavior:** runs batched evaluation on filtered_test.jsonl using 2 shot prompts with a 1 human and 1 AI shot from the sample_prompt.jsonl. A probability spread file will be generated in data/probabilities_results_{model_name}.jsonl
+**expected behavior:** runs batched evaluation on filtered_test.jsonl using 2 shot prompts with a 1 human and 1 AI shot from the sample_prompt.jsonl. A probability spread file will be generated in `data/probabilities_results_{model_name}.jsonl`
 
 Running the command below will show the probability spread and histogram for analysis.
 
@@ -131,7 +132,7 @@ python src/calibrate_prob_for_prompt.py --model_name pythia-160m
 
 **expected behavior:** Visualises the probabilities spread with histogram based on the given model_name.
 
-To test the performance of the model with a new threshold, the following command can be used.
+To test the performance of the model with a new threshold, the following command can be used. We provide the threshold values we used in our report.
 
 ```
 python src/few-shot-prompt.py --num_shots 2 \
@@ -151,14 +152,14 @@ The command below allows the user to download the needed model and extract the d
 
 ```
 model_dir='trained_models/pythia-160m_lora_gen_256_r32'
-run_name="pythia-160m_dpo_faster2"
+run_name=[USER_DEFINED] # used to set the output dir, for example: "pythia-160m_dpo"
 output_dir='trained_models'/$run_name
 
 mkdir -p $output_dir
 
 python src/dpo/trainer.py   --model_dir $model_dir \
-                                    	     --run_name $run_name \
-                                                 --output_dir $output_dir 
+                            --run_name $run_name \
+                            --output_dir $output_dir 
 ```
 
 
@@ -169,7 +170,7 @@ The classification head can be trained using the following command.
 
 ```
 model_dir='models/llama-3.2-1B'
-run_name="llama-1b_clf"
+run_name=[USER_DEFINED] # used to set the output dir, for example: "pythia-160m_clf"
 output_dir='trained_models'/$run_name
 
 mkdir -p $output_dir
