@@ -3,7 +3,7 @@
 ```
 %install necessary packages
 pip install -U "huggingface_hub[cli]"
-pip install torch transformers[torch] numpy tqdm datasets peft accelerate evaluate
+pip install torch transformers[torch] numpy tqdm datasets peft accelerate evaluate trl
 ```
 
 ```
@@ -39,7 +39,7 @@ Further, we provide `data/balanced_filtered_test.jsonl` for replicability across
 
 ## In-context learning
 
-In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. We upload the sample prompts at `data/sample_prompts.json` that we use for replicability. These prompts were randomly sampled from the train datasplit. 
+In our in-context learning experiments, there are 2 sections: few-shot prompts and expert role prompting. We upload the sample prompts at `data/sample_prompt.jsonl` that we use for replicability. These prompts were randomly sampled from the train datasplit. 
 
 ### 0 shot prompt:
 
