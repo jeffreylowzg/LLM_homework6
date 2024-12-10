@@ -29,10 +29,13 @@ cd ../..
 wandb login 
 ```
 
+## Data Processing
 ```
 %download dataset and split into test, train and dev
 python src/process_data.py
 ```
+
+Further, we provide `balanced_filtered_test.jsonl` for replicability across experiments. This test set was derived from randomly sampling an equal number of samples from both classes from the test datasplit. 
 
 ## In-context learning
 
