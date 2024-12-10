@@ -192,4 +192,3 @@ if __name__ == "__main__":
         print(f"Few-shot prompt used:\n\n{prompt}")
         print(f"\nTrue Label: {'Human' if test_example['label'] == 0 else 'AI'}")
         print(f"Predicted Label: {'Human' if classification_result['predicted_label'] == 0 else 'AI'}")
-        print(f"Probabilities: {classification_result['probabilities']}")

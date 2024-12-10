@@ -99,6 +99,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 PEFT lora configurations have to be set within the src/trainer_gen.py file
 
 ```
+export PYTHONPATH=.
 model_dir='models/pythia-160m'
 run_name=[USER-DEFINED] # used to set the output dir, for example: pythia-160m-lora-r4
 output_dir='trained_models'/$run_name
@@ -151,6 +152,7 @@ python src/few-shot-prompt.py --num_shots 2 \
 The command below allows the user to download the needed model and extract the data needed for DPO on the human label.
 
 ```
+export PYTHONPATH=.
 model_dir='trained_models/pythia-160m_lora_gen_256_r32'
 run_name=[USER_DEFINED] # used to set the output dir, for example: "pythia-160m_dpo"
 output_dir='trained_models'/$run_name
@@ -169,6 +171,7 @@ python src/dpo/trainer.py   --model_dir $model_dir \
 The classification head can be trained using the following command. 
 
 ```
+export PYTHONPATH=.
 model_dir='models/llama-3.2-1B'
 run_name=[USER_DEFINED] # used to set the output dir, for example: "pythia-160m_clf"
 output_dir='trained_models'/$run_name
